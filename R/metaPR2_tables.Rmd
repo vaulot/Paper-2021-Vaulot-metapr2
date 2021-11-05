@@ -1,0 +1,212 @@
+---
+title: "MetaPR2 - Tables"
+date: "`r Sys.Date()`"
+output:
+  rmdformats::readthedown:
+    highlight: kate
+---
+
+# Initialize
+
+```{r init, echo=TRUE, message=FALSE, warning=FALSE}
+source(here::here("R", "init.R"))
+```
+
+# Genrate tables
+
+## Data set table for paper
+
+```{r}
+table_datasets <- asv_set$datasets %>% 
+  select(dataset_id, dataset_name, region, ecosystem, substrate_type, sample_number, asv_number, n_reads_mean, bioproject_accession, paper_doi) %>% 
+  mutate(dataset_name =  str_replace(dataset_name, "_", " ")) %>% 
+  arrange(dataset_id)
+
+
+```
+
+
+
+TO DO:
+* Sample number per fraction, per substrate and per ecosystem....
+
+* In the dataset table, add number of ASVs, number of reads, number of samples
+
+## Primers
+
+### Read the primers tables from pr2
+
+Only keep the 18S primers with V region
+
+```{r}
+
+# Read from local database
+pr2_db <- db_info("pr2_google")
+pr2_db_con <- db_connect(pr2_db)
+
+primers <- tbl(pr2_db_con, "pr2_primers") %>% 
+  collect()
+primer_sets_all <- tbl(pr2_db_con, "pr2_primer_sets") %>% 
+  collect()
+
+disconnect <- db_disconnect(pr2_db_con)
+
+
+  
+primer_sets <- primer_sets_all %>% 
+  filter(gene == "18S rRNA")
+    
+  
+
+primer_sets <- primer_sets %>% 
+  left_join(select(primers, 
+                   primer_id, 
+                   fwd_name=name,
+                   fwd_seq=sequence, 
+                   fwd_start_yeast= start_yeast, 
+                   fwd_end_yeast= end_yeast), 
+            by = c("fwd_id" = "primer_id")) %>% 
+  left_join(select(primers, 
+                 primer_id, 
+                 rev_name=name,
+                 rev_seq=sequence, 
+                 rev_start_yeast= start_yeast, 
+                 rev_end_yeast= end_yeast), 
+          by = c("rev_id" = "primer_id")) %>% 
+  mutate(length_yeast = rev_end_yeast - fwd_start_yeast + 1) %>% 
+  select(gene_region, specificity, 
+         primer_set_id, primer_set_name,
+         contains("fwd"), 
+         contains("rev"),
+         length_yeast, 
+         reference:remark) %>%
+  select(-fwd_id, -rev_id) %>% 
+  arrange(gene_region,  fwd_start_yeast, rev_start_yeast) %>% 
+  mutate(specific = ifelse(is.na(specificity), "general", "specific")) %>% 
+  relocate(specific, .before = specificity)
+  
+
+```
+
+
+### Primers for 18S
+
+```{r}
+
+
+ n_rows = 15
+
+ primers_usage_fwd <- asv_set$datasets %>% 
+  count(primer_fwd_name,primer_fwd_seq, gene_region) %>% 
+  arrange(-n) %>% 
+  slice_head(n=n_rows) %>% 
+  left_join(select(primers, sequence, direction, reference, doi), by = c("primer_fwd_seq" = "sequence")) %>% 
+  rename(name = primer_fwd_name,
+         sequence = primer_fwd_seq) 
+   
+ 
+primers_usage_rev <- asv_set$datasets %>% 
+  count(primer_rev_name,primer_rev_seq, gene_region) %>% 
+  arrange(-n) %>% 
+  slice_head(n=n_rows) %>% 
+  left_join(select(primers, sequence, direction, reference, doi), by = c("primer_rev_seq" = "sequence")) %>% 
+  rename(name = primer_rev_name,
+         sequence = primer_rev_seq) 
+
+ table_primers <- bind_rows(primers_usage_fwd, primers_usage_rev) %>% 
+   relocate(n, .after = last_col())
+
+ table_primer_sets_usage <- asv_set$datasets %>% 
+  count(primer_fwd_name,primer_rev_name, gene_region) %>% 
+  arrange(-n) %>% 
+  rownames_to_column() %>%  
+  mutate(rowname = as.numeric(rowname))  %>% 
+  mutate(primer_fwd_name = case_when(rowname > n_rows ~ "Other",
+                                    TRUE ~ primer_fwd_name) ,
+         # primer_fwd_seq = case_when(rowname > n_rows ~ NA_character_,
+         #                            TRUE ~ primer_fwd_seq),
+         primer_rev_name = case_when(rowname > n_rows ~ NA_character_,
+                                    TRUE ~ primer_rev_name) ,
+         # primer_rev_seq = case_when(rowname > n_rows ~ NA_character_,
+         #                            TRUE ~  primer_rev_seq) , 
+         gene_region  = case_when(rowname > n_rows ~ NA_character_,
+                                    TRUE ~ gene_region)) %>% 
+  count(primer_fwd_name,primer_rev_name, gene_region, wt= n) %>% 
+  arrange(-n)  
+ 
+ top <- table_primer_sets_usage %>% 
+   filter(primer_fwd_name != "Other")
+ bottom <- table_primer_sets_usage %>% 
+   filter(primer_fwd_name == "Other") 
+ table_primer_sets_usage <- bind_rows(top, bottom)
+ 
+
+ DT::datatable(table_primers)
+ 
+ DT::datatable(table_primer_sets_usage)
+
+```
+
+# Export to Latex tables
+
+## Table - Primers
+
+```{r, eval=TRUE}
+
+table <- table_primers
+caption <- "Eukaryotic 18S rRNA primers used for metaPR2 datasets with the number of datasets (N) where used (Table~\\ref{tab:datasets})."
+label <- "primers"
+file <- "table_primers.tex"
+colnames <- c( "Name", "Sequence", "Region", "Direction", "Reference", "DOI", "N")
+align <- c("l","l", "c","c","l","l","c" )
+
+table_out <- kable_latex(table, caption, label, colnames, align, digits=0, scale_down = TRUE) 
+
+cat(table_out, file = path_table(file))
+
+```
+
+
+
+## Table - Primer sets
+
+```{r, eval=TRUE}
+
+table <- table_primer_sets_usage
+caption <- "18S rRNA primer sets used for metaPR2 datasets with the number of datasets (N) where used (Table~\\ref{tab:datasets}).  Refer to Table~\\ref{tab:primers} for sequence and reference of primers."
+label <- "primer_sets"
+file <- str_c("table_", label, ".tex")
+colnames <- c( "Primer fwd", "Primer rev", "Region", "N")
+align <- c("l","l", "c","c" )
+
+table_out <- kable_latex(table, caption, label, colnames, align, digits=0, scale_down = FALSE) 
+
+cat(table_out, file = path_table(file))
+
+
+```
+
+## Table - Data sets 
+
+```{r, eval=TRUE}
+
+table <- table_datasets
+
+
+caption <- "List of eukaryotic datasets and studies included in the metaPR2 databases. The column 'Reads' corresponds to mean number of reads per sample."
+label <- "datasets"
+file <- str_c("table_", label, ".tex")
+colnames <- c("ID", "Name", "Area", "Ecosystem", "Substrate", "Samples", "Reads", "ASVs", "Bioproject", "DOI")
+align <-   c("c", "p{4cm} ","p{2cm} ", rep("p{2cm}", 2), rep("c", 3), rep("p{2cm}", 1), rep("p{3cm}", 1) )
+
+table_out <- kable_latex(table, caption, label, colnames, align, digits=0, longtable = TRUE)
+
+cat(table_out, file = path_table(file))
+
+
+```
+
+
+
+
+
