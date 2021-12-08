@@ -15,7 +15,96 @@ source(here::here("R", "init.R"))
 
 # Figures
 
-## V9 Select V4 only
+## Map of all samples for which we have coordinates
+
+```{r fig.height=8, fig.width=12}
+
+asv_summary <- asv_set$df %>%  
+      distinct(project, dataset_id, longitude, latitude) %>% 
+      mutate(project =  case_when(str_detect(project, "OSD") ~ "OSD",
+                                  str_detect(project, "Tara") ~ "Tara",
+                                  str_detect(project, "Malaspina") ~ "Malaspina",
+                                  TRUE ~ "Other")) %>% 
+      mutate(project = forcats::fct_relevel(project, c("OSD", "Tara","Malaspina", "Other")))
+
+n_datasets = length(unique(asv_summary$dataset_id))
+
+# Using world map
+
+  # world <- map_data("world")
+  # 
+  # fig_map_stations <- ggplot() + 
+  #   geom_polygon(data = world, aes(x=long, y = lat, group = group), fill="grey") +
+  #   coord_fixed(1.3) +
+  #   # coord_map("mollweide") +
+  #   geom_point(data=asv_summary, aes(x=longitude, y=latitude, color = project), size=2.5) + 
+  #   scale_color_viridis_d(option = "magma") +
+  #   labs(title = str_c("Map fo samples for ", n_datasets," datasets.") ,
+  #        colors = "Project",
+  #        x = "Longitude",
+  #        y = "Latitude") +
+  #   scale_x_continuous(breaks = (-4:4) * 45) +
+  #   scale_y_continuous(breaks = (-2:2) * 30)
+  # 
+  # print(fig_map_stations)
+  
+# Using sf - Nicer for scales....
+  
+  # See for removing lines : https://stackoverflow.com/questions/49836184/cant-remove-gridlines-when-plotting-with-geom-sf
+    
+
+  world <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf")
+  
+  # Next line is to have the grid lines: see https://stackoverflow.com/questions/68343004/ggplot-and-geom-sf-not-showing-graticule-and-tick-marks-on-world-map
+  sf::sf_use_s2(FALSE)
+  
+  crs_longlat <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+  crs_robinson = "+proj=robin +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m no_defs"
+  
+  asv_summary_sf <- asv_summary %>% 
+    filter(!is.na(longitude)) %>% 
+    sf::st_as_sf( coords = c("longitude", "latitude"),
+                crs = crs_longlat) 
+  
+  # boundary <- sf::st_multilinestring(list(rbind(c(-180,90), c(180,90)), rbind(c(180,-90), c(-180,-90))))
+  # boundary <- sf::st_sfc(boundary, crs=crs_longlat)
+  # boundary <- sf::st_sf(geometry = boundary)
+
+  fig_map_stations <- ggplot() + 
+    geom_sf(data = world, color="grey60", fill="grey60")  +
+    geom_sf(data=asv_summary_sf, aes(color=project), size=1.5) +
+    # geom_sf(data=boundary)+ 
+    theme_bw() +
+    # theme(panel.border=element_blank()
+    #       # panel.grid = element_line(colour = "grey90", size=3)
+    #       # axis.text.x= element_blank(),
+    #       # axis.text.y = element_blank()
+    #       # plot.margin=margin(0,0,0,0),
+    #       # aspect.ratio = 0.5
+    #       )  +
+    scale_color_viridis_d(option = "plasma", begin = 0, end = 0.85, direction = -1) +
+    # scale_color_brewer(palette = "Set2") + # https://www.datanovia.com/en/fr/blog/top-palettes-de-couleurs-r-a-connaitre-pour-une-meilleur-visualisation-des-donnees/
+    labs(
+         # title = str_c("Map of samples for ", n_datasets," datasets.") ,
+         color = "Project",
+         x = "",
+         y = "") +
+    scale_x_continuous(breaks = seq(from = -180, to = 180, by = 60)) +
+    # scale_y_continuous(breaks=c(-89.999, 89.999)) +
+    scale_y_continuous(breaks=seq(from = -90, to = 90, by = 30)) +
+    coord_sf(crs = crs_longlat, expand =FALSE)
+    # coord_sf(crs = "+proj=robin +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m no_defs", expand = TRUE) 
+  
+  fig_map_stations
+```
+
+
+## V9 only
+
+Total numbers of V9 samples:  899 
+Total numbers of V9 ASVs:  21623 
+Total numbers of V9 reads:  949 845 841
+
 
 ```{r}
 asv_set_V9 <- list()
@@ -57,20 +146,22 @@ rm(asv_set_V9)
 #### All V4
 
 Total numbers of V4 samples:  2928 
-Total numbers of V4 ASVs:  55511 
-Total numbers of V4 reads:  221 982 399 
+Total numbers of V4 sampling sites:  859 
+Total numbers of V4 ASVs:  57340 
+Total numbers of V4 reads:  224 622 713 
 
 ##### V4 only protists
 
 
 Total numbers of V4 samples:  2915 
-Total numbers of V4 ASVs:  40039 
-Total numbers of V4 reads:  130 393 731 
+Total numbers of V4 sampling sites:  852
+Total numbers of V4 ASVs:  40030 
+Total numbers of V4 reads:  130 373 333 
 
 ```{r}
 
 division_memoved <- c("Metazoa", "Fungi", "Streptophyta")
-
+# division_memoved <- c()
 asv_set_V4 <- list()
 
 asv_set_V4$df <- asv_set$df %>% 
@@ -86,6 +177,12 @@ samples_V4 <- asv_set_V4$df %>%
   unique()
 
 n_samples_V4 <- length(samples_V4)
+
+sampling_sites_V4 <- asv_set_V4$df %>%
+  select(latitude, longitude) %>% 
+  distinct()
+
+n_sampling_sites_V4 <- nrow(sampling_sites_V4)
   
 asv_code_V4 <- asv_set_V4$df %>% 
   dplyr::filter(gene_region == "V4", 
@@ -97,15 +194,19 @@ asv_code_V4 <- asv_set_V4$df %>%
 asv_set_V4$fasta <- asv_set$fasta %>% 
   filter(asv_code %in% asv_code_V4)
 
+asv_set_V4$samples <- asv_set$samples %>% 
+  filter(file_code %in% asv_set_V4$df$file_code)
+
 n_asvs_V4 <- nrow(asv_set_V4$fasta)
 
 cat("Total numbers of V4 samples: ",n_samples_V4, "\n" )
+cat("Total numbers of V4 sampling sites: ",n_sampling_sites_V4, "\n" )
 cat("Total numbers of V4 ASVs: ",n_asvs_V4 , "\n")
 cat("Total numbers of V4 reads: ", formatC(n_reads_V4,big.mark = " ") , "\n" )
 ```
 
 
-## Treemaps (for all)
+## Treemaps (for V4)
 
 ```{r}
 
@@ -113,6 +214,8 @@ fig_treemap <- asv_set_V4$df %>%
   treemap(asv_set_V4$fasta, "kingdom", global$supergroup_colors)
 
 fig_treemap <- fig_treemap$g 
+
+fig_treemap
 
 ```
 
@@ -288,6 +391,381 @@ fig_bars_asv <- gg_reads + gg_stations  + gg_correl  + guide_area() +
 fig_bars_asv
 ```
 
+### ASV fond in a single environement
+
+```{r}
+
+df<- asv_set_V4$df %>% 
+  select(any_of(global$taxo_levels), ecosystem) %>% 
+  distinct() %>% 
+  group_by(asv_code) %>% 
+  mutate(n_ecosystems = n()) %>% 
+  filter(n_ecosystems == 1) 
+
+fig_asv_limited <- ggplot(df, aes(x=ecosystem, fill=supergroup))+ 
+  geom_bar() +
+  scale_y_log10()
+
+fig_asv_limited
+```
+
+## Barplots at supergroup level
+
+### By environment
+
+```{r}
+
+supergroup_to_remove <- c("Apusozoa", "Eukaryota_X", "Excavata", "Other")
+
+df <- asv_set_V4$df %>% 
+  select(file_code, ecosystem, supergroup, ecological_function, trophic_group, n_reads_pct) %>% 
+  mutate(supergroup = fct_other(supergroup,
+                                drop = supergroup_to_remove,
+                                other_level = "Other"),
+         ecosystem = fct_rev(ecosystem))
+
+supergroup_colors <- global$supergroup_colors[setdiff(names(global$supergroup_colors), supergroup_to_remove)]
+
+supergroup_colors <- c(supergroup_colors, "Other" = "#000000")
+
+ecological_function_colors <- global$ecological_function_colors[setdiff(names(global$ecological_function_colors), "metazoans")]
+
+trophic_group_colors <- global$trophic_group_colors[setdiff(names(global$trophic_group_colors), c("metazoan", "fungi"))]
+
+
+fig_barplot_env_taxo <- barplot(df, "ecosystem","taxonomy" , "supergroup" )
+
+plotly::ggplotly(fig_barplot_env_taxo)
+
+fig_barplot_env_ecological_function <- barplot(df, "ecosystem","ecological_function" , "supergroup" )
+
+plotly::ggplotly(fig_barplot_env_ecological_function)
+
+fig_barplot_env_trophic_group <- barplot(df, "ecosystem","trophic_group" , "supergroup" )
+
+plotly::ggplotly(fig_barplot_env_trophic_group)
+
+```
+
+### By latitude for marine samples only
+
+```{r}
+
+supergroup_to_remove <- c("Apusozoa", "Eukaryota_X", "Excavata", "Other")
+
+df <- asv_set_V4$df %>% 
+  filter(ecosystem %in% c("oceanic", "coastal")) %>% 
+  select(file_code, latitude, supergroup, ecological_function, n_reads_pct) %>% 
+  mutate(supergroup = fct_other(supergroup,
+                                drop = supergroup_to_remove,
+                                other_level = "Other")) 
+
+supergroup_colors <- global$supergroup_colors[setdiff(names(global$supergroup_colors), supergroup_to_remove)]
+
+supergroup_colors <- c(supergroup_colors, "Other" = "#000000")
+
+ecological_function_colors <- global$ecological_function_colors[setdiff(names(global$ecological_function_colors), "metazoans")]
+
+
+fig_barplot_lat_taxo <- barplot(df, "latitude","taxonomy" , "supergroup" ) +
+  ylab("Latitude") 
+
+plotly::ggplotly(fig_barplot_lat_taxo)
+
+fig_barplot_lat_traits <- barplot(df, "latitude","ecological_function" , "supergroup" )  +
+  ylab("Latitude")
+
+plotly::ggplotly(fig_barplot_lat_traits) 
+
+fig_barplot_lat <-fig_barplot_lat_taxo / fig_barplot_lat_traits +
+  plot_annotation(tag_levels = 'A')
+
+```
+
+## Diversity analyis
+
+### By environment
+```{r}
+
+ps <- make_phyloseq(asv_set_V4$samples, asv_set_V4$df, asv_set_V4$fasta)
+
+ps
+
+fig_alpha_env <- ps_alpha(ps, measures = c("Shannon"), 
+                          x="ecosystem" , color="ecosystem", shape="fraction_name") +
+                 xlab("Ecosystem") + ylab("Diversity")
+
+fig_alpha_env_significance <-microbiomeSeq::plot_anova_diversity(ps, method = c("shannon"),
+                                    grouping_column =  "ecosystem",pValueCutoff=0.05)
+
+fig_alpha_env
+
+fig_alpha_env_significance
+
+```
+### By latitude for only the marine stuff
+
+```{r}
+
+df <- asv_set_V4$df %>% 
+  filter(ecosystem %in% c("oceanic", "coastal")) 
+fasta <- asv_set_V4$fasta %>% 
+  filter(asv_code %in% df$asv_code)
+samples <- asv_set_V4$samples %>% 
+  filter(file_code %in% df$file_code)
+
+ps <- make_phyloseq(samples, df, fasta)
+
+ps
+
+fig_alpha_lat <- ps_alpha(ps, measures = c("Shannon"), 
+                          x="latitude" , color="ecosystem", shape="fraction_name",
+                          discretize = TRUE) +
+                 xlab("Latitude") + ylab("Diversity")
+
+```
+
+### Combine figures together
+
+```{r}
+
+fig_barplot_env <-fig_barplot_env_taxo / 
+  fig_barplot_env_ecological_function /
+  (fig_alpha_env +
+       xlab("") + ylab("Shannon index") +
+      theme(
+      strip.background = element_blank(),
+      strip.text.x = element_blank()
+      )
+   ) +
+  plot_annotation(tag_levels = 'A')
+
+
+fig_barplot_lat <-fig_barplot_lat_taxo / 
+  fig_barplot_lat_traits /
+  (fig_alpha_lat +
+       xlab("Latitude") + ylab("Shannon index") +
+      theme(
+      strip.background = element_blank(),
+      strip.text.x = element_blank()
+      )
+   ) +
+  plot_annotation(tag_levels = 'A')
+
+
+
+fig_alpha = (fig_alpha_env +
+                 xlab("") + ylab("Diversity") +
+                theme(
+                strip.background = element_blank(),
+                strip.text.x = element_blank()
+                )
+             )  / 
+            (fig_alpha_lat  +
+                 xlab("Latitude") + ylab("Diversity") +
+                theme(
+                strip.background = element_blank(),
+                strip.text.x = element_blank()
+                )
+             ) +
+            plot_annotation(tag_levels = 'A')
+
+
+
+```
+
+# BLAST (usearch) analysis
+
+## Read usearch table
+
+```{r}
+metapr2_db <- dvutils::db_info("metapr2_google")
+metapr2_db_con <- dvutils::db_connect(metapr2_db)
+
+usearch <- tbl(metapr2_db_con, "metapr2_asv_vsearch_pr2") %>% 
+  collect()
+
+ dvutils::db_disconnect(metapr2_db_con)
+ 
+ usearch <- usearch %>% 
+   mutate(asv_code = str_sub(hash_value, 1, 10)) %>% 
+   select(-hash_value) %>% 
+   tidyr::separate(pr2_label, into = c("pr2_accession", NA, NA, "seq_name",str_c(global$taxo_levels[1:8],"_usearch" )), sep = "[|]") %>% 
+   mutate(pr2_sequence_type = case_when(str_detect(seq_name, "strain") ~ "cultured",
+                              TRUE ~ "environmental"))
+ 
+ usearch_summary <- usearch %>% 
+   group_by(asv_code) %>% 
+   slice_max(order_by = pr2_sequence_type, n=1, with_ties = FALSE) %>% 
+   ungroup() 
+ 
+```
+
+## Merge with ASV
+
+```{r}
+df_usearch <- asv_set_V4$df %>% 
+  select(any_of(global$taxo_levels), file_code, n_reads, n_reads_pct, latitude, ecosystem) %>% 
+  left_join(select(usearch_summary, asv_code, pr2_sequence_type, pct_id, contains("_usearch")), by = "asv_code") 
+```
+
+## Distribution based on similarity by supergroup
+
+```{r fig.height=10, fig.width=10}
+
+supergroup_to_remove <- c("Apusozoa", "Eukaryota_X", "Excavata", "Other") # less than 100 ASVs
+# supergroup_to_remove <- c("Eukaryota_X", "Excavata", "Other")
+
+supergroup_colors <- global$supergroup_colors[setdiff(names(global$supergroup_colors), supergroup_to_remove)]
+
+# supergroup_colors <- c(supergroup_colors, "Other" = "#000000")
+
+df <- df_usearch %>% 
+  select(asv_code, supergroup, pct_id, pr2_sequence_type) %>% 
+  distinct() %>% 
+  filter(pct_id > 0, 
+         !(supergroup %in% supergroup_to_remove)) 
+
+  # mutate(supergroup = fct_other(supergroup,
+  #                               drop = supergroup_to_remove,
+  #                               other_level = "Other")
+  # ) 
+
+table_pct_id <- df %>% 
+  group_by(supergroup) %>% 
+  summarize(pct_id_mean = mean(pct_id), n = n()) %>% 
+  arrange(desc(pct_id_mean))
+
+table_pct_id
+
+df <- left_join(df, table_pct_id)
+
+fig_pct_id_density <- ggplot(df, aes(x=pct_id, fill = supergroup)) + 
+  geom_density(alpha=1) +
+  # facet_wrap( ~ pr2_sequence_type) 
+  facet_wrap( ~ supergroup, ncol = 3, scales = "free_y") +
+  scale_fill_manual(values = supergroup_colors)+
+  # ylim(0, 0.5) + 
+  xlim(80,100) +
+  theme_bw()  
+fig_pct_id_density 
+
+fig_pct_id_ridges <- ggplot(df, aes(x=pct_id, y = reorder(supergroup, pct_id_mean), fill = supergroup)) + 
+  ggridges::geom_density_ridges(alpha=0.8, scale = 4, quantile_lines = TRUE, quantiles = 2, bandwidth = 1) +
+  # facet_wrap( ~ pr2_sequence_type) 
+  # facet_wrap( ~ supergroup, ncol = 3, scales = "free_y") +
+  scale_fill_manual(values = supergroup_colors)+
+  # ylim(0, 0.5) + 
+  xlim(80,100) +
+  ggridges::theme_ridges()  +
+  ylab("") +
+  xlab("% identity with PR2 sequences")
+
+
+# plotly::ggplotly(fig_pct_id_density)
+
+fig_pct_id_ridges  
+
+
+fig_pct_id_violin <- ggplot(df, aes(y=pct_id, x = supergroup)) + 
+  geom_violin() +
+  # ggforce::geom_sina(aes(color=.data[[color]], shape =.data[[shape]] )) +
+  ggforce::geom_sina() +
+  geom_boxplot(color = "grey", alpha = 0, width=0.5) +
+  # scale_color_manual(values = global$supergroup_colors)+
+  # ylim(0, 0.5) + xlim(70,100) +
+  theme_bw()  +
+  coord_flip()
+
+fig_pct_id_violin
+
+
+
+```
+
+
+## Distribution based on similarity by environements
+
+```{r fig.height=10, fig.width=10}
+
+supergroup_to_remove <- c("Apusozoa", "Eukaryota_X", "Excavata", "Other")
+# supergroup_to_remove <- c("Eukaryota_X", "Excavata", "Other")
+
+supergroup_colors <- global$supergroup_colors[setdiff(names(global$supergroup_colors), supergroup_to_remove)]
+
+# supergroup_colors <- c(supergroup_colors, "Other" = "#000000")
+
+df <- df_usearch %>% 
+  select(asv_code, ecosystem, pct_id, supergroup) %>% 
+  distinct() %>% 
+  filter(pct_id > 0, 
+         !(supergroup %in% supergroup_to_remove))  
+
+
+  # mutate(supergroup = fct_other(supergroup,
+  #                               drop = supergroup_to_remove,
+  #                               other_level = "Other")
+  # )
+
+fig_pct_id_env_density <- ggplot(df, aes(x=pct_id)) + 
+  geom_density(alpha=1, fill="grey") +
+  # facet_wrap( ~ pr2_sequence_type) 
+  facet_wrap( ~ ecosystem, ncol = 2, scales = "free_y") +
+  # ylim(0, 0.5) + 
+  xlim(80,100) +
+  theme_bw()  
+
+fig_pct_id_env_density
+
+fig_pct_id_env_ridges <- ggplot(df, aes(x=pct_id, y = ecosystem, fill = ecosystem)) + 
+  ggridges::geom_density_ridges(alpha=0.8, scale = 2, quantile_lines = TRUE, quantiles = 2, bandwidth = 1) +
+  # facet_wrap( ~ pr2_sequence_type) 
+  # facet_wrap( ~ supergroup, ncol = 3, scales = "free_y") +
+  # scale_fill_manual(values = supergroup_colors)+
+  # ylim(0, 0.5) + 
+  xlim(80,100) +
+  ggridges::theme_ridges()  +
+  scale_fill_viridis_d() +
+  ylab("") +
+  xlab("% identity with PR2 sequences")
+
+
+# plotly::ggplotly(fig_pct_id_density)
+
+fig_pct_id_env_ridges  
+
+fig_pct_id_env_jitter <- ggplot(df, aes(y=pct_id, x = ecosystem)) + 
+  # geom_violin() +
+  # ggforce::geom_sina(aes(color=.data[[color]], shape =.data[[shape]] )) +
+  # ggforce::geom_sina() +
+  geom_boxplot(color = "black", alpha = 0, width=0.5) +
+  geom_jitter(aes(color = supergroup), width = 0.1) +
+  scale_color_manual(values = supergroup_colors )+
+  # ylim(0, 0.5) + xlim(70,100) +
+  theme_bw()  +
+  coord_flip()
+
+fig_pct_id_env_jitter
+
+# plotly::ggplotly(fig_pct_id_env_jitter)
+
+
+```
+
+
+## Assembled Figure
+
+```{r}
+
+fig_pct_id <- fig_pct_id_ridges + fig_pct_id_env_ridges +
+  plot_annotation(tag_levels = 'A') & 
+  guides(linetype = "none", fill = guide_legend(override.aes = list(linetype=0), nrow = 3)) &  
+  theme(legend.position="top", legend.box = "horizontal")
+fig_pct_id
+
+```
+
+
 
 # Export figures
 
@@ -302,9 +780,20 @@ ggsave(plot= fig_bars_genus , filename=path_fig("fig_bars_genus.pdf"),
 ggsave(plot= fig_bars_asv , filename=path_fig("fig_bars_asvs.pdf"), 
        width = 18, height = 14, scale=2.5, units="cm", useDingbats=FALSE)
 
+ggsave(plot= fig_map_stations , filename=path_fig("fig_map_stations.pdf"), 
+       width = 18, height = 10, scale=1.5, units="cm", useDingbats=FALSE)
 
+ggsave(plot= fig_barplot_env , filename=path_fig("fig_barplot_env.pdf"), 
+       width = 15, height = 22, scale=1.5, units="cm", useDingbats=FALSE)
 
+ggsave(plot= fig_barplot_lat , filename=path_fig("fig_barplot_lat.pdf"), 
+       width = 15, height = 22, scale=1.5, units="cm", useDingbats=FALSE)
 
+ggsave(plot= fig_alpha_env_significance , filename=path_fig("fig_alpha_env_significance.pdf"), 
+       width = 12, height = 18, scale=1.5, units="cm", useDingbats=FALSE)
+
+ggsave(plot= fig_pct_id , filename=path_fig("fig_pct_id.pdf"), 
+       width =20, height = 12, scale=2, units="cm", useDingbats=FALSE)
 
 # ggsave(plot= fig_year , filename=path_fig("fig_year.tiff"), 
 #        width = 16 , height = 8, scale=1.8, units="cm", compression = "lzw") 

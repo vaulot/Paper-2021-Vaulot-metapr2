@@ -9,6 +9,8 @@ suppressPackageStartupMessages({
   library(dplyr)
   library(tibble)
   library(tidyr)
+  library(forcats)  
+  
   library(rio)
   
   library(ggplot2)
@@ -40,6 +42,11 @@ source(here("R", "fct_latex.R"))
 
 source(here("R", "fct_treemap.R"))
 
+source(here("R", "fct_barplot.R"))
+
+source(here("R", "fct_phyloseq.R"))
+
+
 
 # source("fn_database.R")
 
@@ -63,8 +70,10 @@ global <- qs::qread(here("data", "global.qs"))
 
 asv_set$df <- asv_set$df %>%
   left_join(asv_set$samples) %>% 
-  left_join(select(asv_set$fasta, asv_code, kingdom:species, sum_reads_asv)) %>%
-  filter(!is.na(kingdom)) 
+  left_join(select(asv_set$fasta, asv_code, kingdom:species, ecological_function, trophic_group, sum_reads_asv)) %>%
+  filter(!is.na(kingdom))
+
+
 
 
 

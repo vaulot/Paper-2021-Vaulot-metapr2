@@ -147,7 +147,63 @@ primers_usage_rev <- asv_set$datasets %>%
 
 ```
 
+## Ecological function
+```{r}
+
+table_traits <- dvutils::pr2_traits_read() %>% 
+  filter(trait_type == "ecological_function") %>% 
+  select(taxon_name, taxon_level, trait_value, trait_source) # %>% 
+  # mutate(trait_source = str_replace(trait_source, "Sommeria-Klein et al. 2021",""))
+
+
+DT::datatable(table_traits)
+
+```
+
+
+
 # Export to Latex tables
+
+## Table - Data sets 
+
+```{r, eval=TRUE}
+
+table <- table_datasets
+
+
+caption <- "List of eukaryotic datasets and studies included in the metaPR2 databases. The column 'Reads' corresponds to mean number of reads per sample."
+label <- "datasets"
+file <- str_c("table_", label, ".tex")
+colnames <- c("ID", "Name", "Area", "Ecosystem", "Substrate", "Samples", "Reads", "ASVs", "Bioproject", "DOI")
+align <-   c("c", "p{4cm} ","p{2cm} ", rep("p{2cm}", 2), rep("c", 3), rep("p{2cm}", 1), rep("p{3cm}", 1) )
+
+table_out <- kable_latex(table, caption, label, colnames, align, digits=0, longtable = TRUE)
+
+cat(table_out, file = path_table(file))
+
+
+```
+
+## Table - Traits 
+
+```{r, eval=TRUE}
+
+table <- table_traits
+
+
+caption <- "Ecological function of taxa according to Table S2 of Sommeria-Klein et al. (2021).  Taxa present in the PR2 database for which ecological function was not present in Table S2 were assigned an ecological function based on the litterature.  Ecological function was propagated to all taxa below the taxon for which it was defined using an R script."
+label <- "traits"
+file <- str_c("table_", label, ".tex")
+colnames <- c("Taxon", "Taxonomic level", "Function", "Reference")
+align <-   c(rep("l", 4) )
+
+table_out <- kable_latex(table, caption, label, colnames, align, digits=0, longtable = TRUE)
+
+cat(table_out, file = path_table(file))
+
+
+```
+
 
 ## Table - Primers
 
@@ -185,28 +241,6 @@ cat(table_out, file = path_table(file))
 
 
 ```
-
-## Table - Data sets 
-
-```{r, eval=TRUE}
-
-table <- table_datasets
-
-
-caption <- "List of eukaryotic datasets and studies included in the metaPR2 databases. The column 'Reads' corresponds to mean number of reads per sample."
-label <- "datasets"
-file <- str_c("table_", label, ".tex")
-colnames <- c("ID", "Name", "Area", "Ecosystem", "Substrate", "Samples", "Reads", "ASVs", "Bioproject", "DOI")
-align <-   c("c", "p{4cm} ","p{2cm} ", rep("p{2cm}", 2), rep("c", 3), rep("p{2cm}", 1), rep("p{3cm}", 1) )
-
-table_out <- kable_latex(table, caption, label, colnames, align, digits=0, longtable = TRUE)
-
-cat(table_out, file = path_table(file))
-
-
-```
-
-
 
 
 
