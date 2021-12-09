@@ -148,39 +148,30 @@ ps_alpha <- function(ps, measures = c("Shannon"),
 # Beta diversity ----------------------------------------------------------
 
 ps_beta <- function(ps, ps_ordinate, 
-                    color_samples="latitude", shape_samples = "fraction_name",
+                    color_samples="ecosystem", 
+                    shape_samples = NULL,
                     color_taxa) {
   
-  # showNotification(ui = "Computing ordination...", id="ps_ordinate_message")
-  
-  # ps_ordinate <- phyloseq::ordinate(ps, method = method, distance = distance, maxit=5)
-  
-  # removeNotification(id="ps_ordinate_message")
-  
-  tagList(
-    p(""),
-    renderPrint(print(ps)),
-    renderPlot({
-      phyloseq::plot_ordination(ps, ps_ordinate,
+
+      gg_samples <- phyloseq::plot_ordination(ps, ps_ordinate,
                                 type="samples",
                                 color=color_samples, 
                                 shape = shape_samples) +
         geom_point(size=5, alpha=0.85) +
+        scale_color_viridis_d()
         # xlim(-90,90) +
-        scale_color_gradient2(high = "darkblue", mid= "white", low = "darkred") +
+        # scale_color_gradient2(high = "darkblue", mid= "white", low = "darkred") +
         
-        phyloseq::plot_ordination(ps, ps_ordinate,
+        
+        
+      gg_taxa <- phyloseq::plot_ordination(ps, ps_ordinate,
                                   type="taxa",
                                   color=color_taxa) +
         geom_point(size=5, alpha=0.8) +
         scale_color_viridis_d() +
         
-        patchwork::plot_layout(ncol = 1)
-      
-    },  height = 1600, width = 1000, res = 96),
-    renderPrint(print(ps_ordinate))
-  )
-  
+      return(list(gg_samples = gg_samples, gg_taxa = gg_taxa))
+        
 }
 
 # Create phyloseq file ----------------------------------------------------------

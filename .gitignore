@@ -12,3 +12,5 @@ output
 data_initialize.R
 ps.rds
 metapr2_paper_to_do.md
+R_server/
+data/ps*
