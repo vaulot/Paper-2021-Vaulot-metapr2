@@ -15,6 +15,7 @@ suppressPackageStartupMessages({
   
   library(ggplot2)
   library(patchwork)
+  library(ggcharts)
   
   library(here)
   
@@ -123,10 +124,10 @@ asv_set$df_cluster <- asv_set$df_cluster %>%
 
 # Check that no centroid left in cluster
 
-cat("Number of rows with centroid in clustered (should be 0): ", nrow(filter(asv_set$df_cluster, !is.na(asv_code_centroid))))
+message("Number of rows with centroid in clustered (should be 0): ", nrow(filter(asv_set$df_cluster, !is.na(asv_code_centroid))))
 
-cat("Are the 2 sums identical: ", sum(asv_set$df_cluster$n_reads) == sum(asv_set$df$n_reads))
+message("Are the 2 sums identical: ", sum(asv_set$df_cluster$n_reads) == sum(asv_set$df$n_reads))
 
-cat("No line with missing taxo: ", nrow(asv_set$df_cluster %>%  filter(is.na(kingdom))))
+message("No line with missing taxo: ", nrow(asv_set$df_cluster %>%  filter(is.na(kingdom))))
     
 

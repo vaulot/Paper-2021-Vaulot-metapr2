@@ -147,6 +147,75 @@ primers_usage_rev <- asv_set$datasets %>%
 
 ```
 
+## Figure with primer sets
+
+```{r}
+reorder_primer<- function (x, y) {x+0.01*(y-x)}
+# reorder_primer<- function (x, y) {(y-x)}
+
+ primer_sets_used <- table_primer_sets_usage %>% 
+   left_join(select(primers, primer_fwd_name = name, fwd_end = end_yeast)) %>% 
+   left_join(select(primers, primer_rev_name = name, rev_start = start_yeast)) %>% 
+   mutate(label_name = str_c(primer_fwd_name, primer_rev_name, sep = " - "),
+          label_name = forcats::fct_reorder2(label_name, fwd_end,rev_start, reorder_primer),
+          label_length = str_c(rev_start - fwd_end, " bp"), 
+          color = case_when (n == 14 ~"lightskyblue1",
+                            n == 6 ~ "lightskyblue1",
+                            TRUE ~ "grey80")
+          ) %>% 
+   filter(gene_region == "V4") 
+
+fig <- ggplot(filter(primer_sets_used, !is.na(fwd_end))) +
+  geom_segment(aes(
+    x = fwd_end, 
+    xend = rev_start,
+    y = label_name, 
+    yend = label_name,
+    color = color
+      ),
+  size = 8
+  ) +
+  geom_text(aes(x = rev_start + 20, 
+                y = label_name, 
+                label = str_c("n = ", n)),
+    size = 3, hjust = 0
+  ) +
+  geom_text(aes(x =  fwd_end + 0.5* (rev_start - fwd_end) , 
+                y = label_name, 
+                label = label_length),
+    size = 3, hjust = 0.5
+  ) +
+  # scale_color_manual(name = "",  values = c("general" = "gray30", "specific" = "grey70")) +
+  scale_color_identity()+
+  theme_minimal() + 
+  # guides(fill = guide_legend(nrow = 1)) +
+  theme(legend.position = "top", 
+        legend.box = "horizontal",
+        # axis.text.y = element_blank() ,
+        axis.line.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        panel.border= element_blank() ,
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank()) +
+  
+  labs(
+    x = "Position on 18S rRNA",
+    y = "",
+    legend = ""
+  ) +
+  xlim(500,1400) +
+  coord_cartesian(clip = "off") +
+    annotate("text", label = "Primer pairs", x= 500, y = 13, hjust = 1.5)
+
+fig
+
+ggsave(plot= fig , filename=path_fig("fig_primer_sets.pdf"), 
+       width =15, height = 10, scale=1.2, units="cm", useDingbats=FALSE)
+
+
+```
+
+
 ## Ecological function
 ```{r}
 

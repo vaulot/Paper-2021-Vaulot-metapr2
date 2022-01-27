@@ -150,25 +150,31 @@ ps_alpha <- function(ps, measures = c("Shannon"),
 ps_beta <- function(ps, ps_ordinate, 
                     color_samples="ecosystem", 
                     shape_samples = NULL,
-                    color_taxa) {
+                    color_taxa = "supergroup") {
   
 
       gg_samples <- phyloseq::plot_ordination(ps, ps_ordinate,
                                 type="samples",
                                 color=color_samples, 
                                 shape = shape_samples) +
-        geom_point(size=5, alpha=0.85) +
-        scale_color_viridis_d()
+        geom_point(size=2, alpha=0.8) +
+        scale_color_viridis_d() +
+        theme_bw()
         # xlim(-90,90) +
         # scale_color_gradient2(high = "darkblue", mid= "white", low = "darkred") +
+      
+      print(gg_samples)
         
         
         
       gg_taxa <- phyloseq::plot_ordination(ps, ps_ordinate,
                                   type="taxa",
                                   color=color_taxa) +
-        geom_point(size=5, alpha=0.8) +
+        geom_point(size=2, alpha=0.8) +
         scale_color_viridis_d() +
+        theme_bw()
+      
+      print(gg_taxa)
         
       return(list(gg_samples = gg_samples, gg_taxa = gg_taxa))
         

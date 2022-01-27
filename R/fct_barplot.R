@@ -1,4 +1,8 @@
 
+
+# Barplots for taxa ----------------------------------------------------
+
+
 barplot <- function(df, variable, color_coding, taxo_level) {
   
   variable_date <- c("year", "month", "day")
@@ -168,3 +172,98 @@ barplot <- function(df, variable, color_coding, taxo_level) {
   return(gg)
   
 }
+
+
+
+# Barplots for samples ----------------------------------------------------
+
+barplot_samples <- function(df, variable) {
+  
+  variable_to_use <- variable
+  
+  # variable_to_use = "ecosystem" # For testing
+  # df <- samples
+  
+  # For depth only use the first 250 m
+  
+  if (variable == "depth") {
+    df <- df %>% 
+      filter(depth <=250)
+    if (length(unique(df$depth)) > 1) {
+      df <- df %>%
+        mutate(depth =  cut_width(depth, width=25, boundary=0))
+    } else {
+      df <- df %>%
+        mutate(depth =  as.factor(depth))
+    }
+  }  
+  
+  # Discretize the data (must make sure that there is more than one value)
+  
+  
+  if (variable == "temperature") {
+    if (length(unique(df$temperature)) > 1) {
+      df <- df %>%
+        mutate(temperature =  fct_rev(cut_width(temperature, width=5, boundary=0)))
+    } else {
+      df <- df %>%
+        mutate(temperature =  as.factor(temperature))
+    }
+  }
+  
+  if (variable == "salinity") {
+    if (length(unique(df$salinity)) > 1) {
+      df <- df %>%
+        mutate(salinity =  fct_rev(cut_width(salinity, width=5, boundary=0)))
+    } else {
+      df <- df %>%
+        mutate(salinity =  as.factor(salinity))
+    }
+  }
+  
+  if (variable == "latitude") {  
+    if (length(unique(df$latitude)) > 1) {
+      df <- df %>%
+        mutate(latitude =  fct_rev(cut_width(latitude, width=20, boundary=0)))
+    } else {
+      df <- df %>%
+        mutate(latitude =  as.factor(latitude))
+    }
+  }
+  
+
+  df <- df %>% 
+    select(file_code, any_of(c(variable_to_use))) %>% 
+    distinct() %>% 
+    group_by(across(any_of(variable_to_use))) %>% 
+    count() %>% 
+    ungroup()
+  
+
+  # cat(variable_to_use, "\n")
+  # print(df)
+  
+  gg <- df  %>% 
+    ggplot(aes(y= fct_rev(.data[[variable_to_use]]),
+               x=n)) +
+    xlab("Number of samples")   + ylab(variable_to_use) +
+      geom_col(color = "grey")+
+    geom_text(aes( label = ifelse(n > 200, n, "")),
+              nudge_x = - 20, 
+              hjust = 1,
+              size = 5,
+              color = "white") +
+    
+    theme_bw()  +
+    labs(title = variable_to_use) 
+             
+  
+  print(gg)
+  
+
+  return(gg)
+  
+}
+
+
+

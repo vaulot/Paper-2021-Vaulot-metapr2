@@ -1,0 +1,257 @@
+---
+title: "MetaPR2 - Figures Machine Learning"
+date: "`r Sys.Date()`"
+output:
+  rmdformats::readthedown:
+    highlight: kate
+---
+
+
+# Initialize
+
+```{r init, echo=TRUE, message=FALSE, warning=FALSE}
+source(here::here("R", "init.R"))
+```
+
+# Figures
+
+## Parameters
+
+```{r}
+cluster_asv = TRUE
+protist_only = TRUE
+```
+
+
+
+## V4 - protists - DNA
+
+
+```{r}
+
+division_memoved <- c()
+
+if (protist_only) {
+division_memoved <- c("Metazoa", "Fungi", "Streptophyta")
+}
+
+asv_set_V4 <- list()
+
+if (cluster_asv) {
+  asv_set_V4$df <- asv_set$df_cluster 
+} else {
+  asv_set_V4$df <- asv_set$df 
+}
+
+asv_set_V4$df <- asv_set_V4$df %>% 
+  dplyr::filter(gene_region == "V4", 
+                DNA_RNA == "DNA",
+                !(division %in% division_memoved))
+
+n_reads_pct_V4 <- sum(asv_set_V4$df$n_reads_pct)
+n_reads_V4 <- sum(asv_set_V4$df$n_reads)
+
+samples_V4 <- asv_set_V4$df %>% 
+  pull("file_code") %>% 
+  unique()
+
+n_samples_V4 <- length(samples_V4)
+
+sampling_sites_V4 <- asv_set_V4$df %>%
+  select(latitude, longitude) %>% 
+  distinct()
+
+n_sampling_sites_V4 <- nrow(sampling_sites_V4)
+  
+asv_code_V4 <- asv_set_V4$df %>% 
+  dplyr::filter(gene_region == "V4", 
+                DNA_RNA == "DNA",
+                !(division %in% division_memoved)) %>% 
+  pull("asv_code") %>% 
+  unique()
+
+asv_set_V4$fasta <- asv_set$fasta %>% 
+  filter(asv_code %in% asv_code_V4)
+
+asv_set_V4$samples <- asv_set$samples %>% 
+  filter(file_code %in% asv_set_V4$df$file_code)
+
+n_asvs_V4 <- nrow(asv_set_V4$fasta)
+
+cat("Total numbers of V4 samples: ",n_samples_V4, "\n" )
+cat("Total numbers of V4 sampling sites: ",n_sampling_sites_V4, "\n" )
+cat("Total numbers of V4 ASVs: ",n_asvs_V4 , "\n")
+cat("Total numbers of V4 reads: ", formatC(n_reads_V4,big.mark = " ") , "\n" )
+```
+
+# Testing mikropml
+
+```{r}
+library(mikropml)
+
+otu_mini_bin
+
+# results <- run_ml(otu_mini_bin,
+#   'glmnet',
+#   outcome_colname = 'dx',
+#   seed = 2019)
+
+```
+
+
+# Testing on a subset of the table
+
+```{r}
+
+ml <- asv_set_V4$df %>% 
+  filter(dataset_id %in% c(1,205), 
+         class == "Mamiellophyceae") %>% 
+  select(asv_code, species, file_code, dataset_code, n_reads, ecosystem) %>% 
+  mutate(asv_code = str_c(asv_code, species, sep = "_"),
+         file_code = str_c(file_code, dataset_code, sep = "_"),
+         ecosystem = as.character(ecosystem)) %>% 
+  select(-species, -dataset_code) %>% 
+  pivot_wider(names_from = asv_code, values_from = n_reads, values_fill = 0) %>% 
+  select(-file_code)
+
+qs::qsave(ml, here("data", "ml_sample_V4_clust.qs"))
+
+preprocessed <- preprocess_data(dataset = ml, outcome_colname = "ecosystem") 
+
+
+
+ml <- preprocessed$dat_transformed
+
+results_glmnet <- run_ml(ml,
+  'glmnet',
+  outcome_colname = 'ecosystem',
+  find_feature_importance = TRUE,
+  seed = 2019)
+
+results_glmnet$feature_importance
+  
+results_rf <- run_ml(ml,
+  'rf',
+  outcome_colname = 'ecosystem',
+  find_feature_importance = TRUE,
+  seed = 2019)
+
+results_rf$feature_importance
+
+results_xgb <- run_ml(ml,
+  'xgbTree',
+  outcome_colname = 'ecosystem',
+  find_feature_importance = TRUE,
+  seed = 2019)
+
+results_xgb$feature_importance
+
+```
+
+# Testing on the whole dataset with reads number
+
+## Save matrix
+
+```{r}
+
+ml <- asv_set_V4$df %>% 
+  # filter(dataset_id %in% c(1,205), 
+  #        class == "Mamiellophyceae") %>% 
+  select(asv_code, species, file_code, dataset_code, n_reads, ecosystem) %>% 
+  mutate(asv_code = str_c(asv_code, species, sep = "_"),
+         file_code = str_c(file_code, dataset_code, sep = "_"),
+         ecosystem = as.character(ecosystem)) %>% 
+  select(-species, -dataset_code) %>% 
+  pivot_wider(names_from = asv_code, values_from = n_reads, values_fill = 0) %>% 
+  select(-file_code)
+
+qs::qsave(ml, here("data", "ml_V4_clust.qs"))
+
+```
+
+
+##  Results
+
+Run on Roscoff server
+
+# GLM: 
+AUC = 0.82
+feature_importance
+-0.0891461776133018	89da934611_Dino-Group-I-Clade-1_X_sp.
+
+# RF: 
+AUC = 0.73
+feature_importance
+0.658572776162147	537e3642a2_Gymnodinium_sp.
+
+```{r}
+
+preprocessed <- qs::qread(here("data", "ml_V4_clust.preprocessed.qs"))
+
+
+results_glm <- qs::qread(here("data", "ml_V4_clust.results_glm.qs"))
+
+results_glm$performance
+DT::datatable(results_glm$feature_importance)
+
+results_rf <- qs::qread(here("data", "ml_V4_clust.results_rf.qs"))
+
+results_rf$performance
+DT::datatable(results_rf$feature_importance)
+
+```
+# Testing on the whole dataset with reads pct
+
+## Save matrix
+
+```{r}
+
+ml <- asv_set_V4$df %>% 
+  # filter(dataset_id %in% c(1,205), 
+  #        class == "Mamiellophyceae") %>% 
+  select(asv_code, species, file_code, dataset_code, n_reads_pct, ecosystem) %>% 
+  mutate(asv_code = str_c(asv_code, species, sep = "_"),
+         file_code = str_c(file_code, dataset_code, sep = "_"),
+         ecosystem = as.character(ecosystem)) %>% 
+  select(-species, -dataset_code) %>% 
+  pivot_wider(names_from = asv_code, values_from = n_reads_pct, values_fill = 0) %>% 
+  select(-file_code)
+
+qs::qsave(ml, here("data", "ml_V4_clust_pct.qs"))
+
+```
+
+
+##  Results
+
+Run on Roscoff server
+
+# GLM: 
+AUC = **0.92**
+feature_importance
+-0.0860235238009247	250ae5aabd_Dino-Group-I-Clade-1_X_sp.
+
+# RF: 
+AUC = 0.857
+feature_importance
+0.491024060376396	537e3642a2_Gymnodinium_sp.
+
+
+```{r}
+
+preprocessed <- qs::qread(here("data", "ml_V4_clust_pct.preprocessed.qs"))
+
+
+results_glm <- qs::qread(here("data", "ml_V4_clust_pct.results_glm.qs"))
+
+results_glm$performance
+
+DT::datatable(results_glm$feature_importance)
+
+results_rf <- qs::qread(here("data", "ml_V4_clust_pct.results_rf.qs"))
+
+results_rf$performance
+
+DT::datatable(results_rf$feature_importance)
+
+```
