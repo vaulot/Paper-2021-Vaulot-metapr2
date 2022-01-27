@@ -39,7 +39,7 @@ PATH_PR2_DATABASE
     dataset_id <- 1 # CHANGE
     dataset_path <- "DATA_SET_PATH" # CHANGE to dataset path on your server our computer. Fastq files should be in DATA_SET_PATH/fastq
 
-# PR2 database for assignation
+### PR2 database for assignation
     pr2_file <- "PR2_DATABASE_PATH" # CHANGE
 
 ### File structure
