@@ -9,12 +9,13 @@
 
 ### Data set
 PATH_DATA_SET (for example /home/metabarcoding/my_dataset)   
-    /fastq: fastq files (compressed with gz)   
-    /cutadapt: files after cutadapt   
-    /fastq_filtered: filtered fastq files   
-    /qual_pdf: plots of quality after cutadadapt   
-    /dada2: output files from dada2   
-    /blast: output files from BLAST analysis   
+
+* /fastq: fastq files (compressed with gz)   
+* /cutadapt: files after cutadapt   
+* /fastq_filtered: filtered fastq files   
+* /qual_pdf: plots of quality after cutadadapt   
+* /dada2: output files from dada2   
+* /blast: output files from BLAST analysis   
 
 ### PR2 database
 PATH_PR2_DATABASE   
@@ -22,7 +23,7 @@ PATH_PR2_DATABASE
 
 ## Parameters
 
-### Swtiches to adjust the processing
+### Switches to adjust the processing
   remove_primers <- FALSE   
   do_cutadapt     <- FALSE   
   do_summary      <- FALSE   
