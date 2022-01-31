@@ -58,7 +58,7 @@ treemap <- function(df, fasta, taxo_level, taxo_colors) {
   # print(pryr::mem_used())
   
   g1 <- treemap_plot(df, "Reads")
-  g2 <- treemap_plot(fasta, "ASVs")
+  g2 <- treemap_plot(fasta, "cASVs")
   
   g <- g1 + g2
   

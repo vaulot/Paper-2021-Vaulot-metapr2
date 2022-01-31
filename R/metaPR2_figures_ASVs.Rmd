@@ -273,7 +273,7 @@ stations <- asv_set_V4$df %>%
                                    taxo_colors_fill = global$supergroup_color)
 
 gg_stations <- stations$gg + 
-  ylab("% of samples where found") +
+  ylab("% of samples where detected") +
   ggtitle("Most frequent genera")
   
 
@@ -291,7 +291,7 @@ asvs <- asv_set_V4$df %>%
                                    taxo_colors_fill = global$supergroup_color) 
 gg_asvs <- asvs$gg + 
   ylab("Number of ASVs") +
-  ggtitle("Genera with most ASVs") 
+  ggtitle("Genera with most cASVs") 
 
 
 
@@ -381,7 +381,7 @@ reads <- asv_set_V4$df %>%
                                    taxo_colors_fill = global$supergroup_color)
  gg_reads <- reads$gg  + 
   ylab("% of total number of reads") +
-  ggtitle("Most abundant ASVs") 
+  ggtitle("Most abundant cASVs") 
   
 
 # --------------------------------------
@@ -400,8 +400,8 @@ stations <- asv_set_V4$df %>%
                                    taxo_level_fill = supergroup,
                                    taxo_colors_fill = global$supergroup_color)
 gg_stations <- stations$gg + 
-  ylab("% of samples where found") +
-  ggtitle("Most frequent ASV")  +
+  ylab("% of samples where detected") +
+  ggtitle("Most frequent cASVs")  +
   guides(fill = "none")
   
 
@@ -416,7 +416,7 @@ gg_correl <- ggplot(data = asvs) +
   scale_y_log10(limits = c(0.01, 2)) +
   # ylim(0.01, 2) +
   scale_color_manual(values = global$supergroup_colors) +
-  xlab("% of samples where found") +
+  xlab("% of samples where detected") +
   ylab("% of total number of reads") +
   # geom_smooth(aes(x=n_stations, y=n_reads), method = "lm") +
   guides(color = "none") +
@@ -462,8 +462,8 @@ fig_upset_asv <- UpSetR::upset(df,
                                 number.angles = 30, 
                                 point.size = 12, 
                                 line.size = 4, 
-                                mainbar.y.label = "ASV number", 
-                                sets.x.label = "ASVs", 
+                                mainbar.y.label = "cASV number", 
+                                sets.x.label = "cASVs", 
                                 order.by = "freq", 
                                 text.scale = c(5), 
                                 mb.ratio = c(0.7, 0.3))
@@ -925,8 +925,15 @@ fig_pct_id_env_jitter
 
 fig_barplot_env <-(fig_barplot_env_taxo + 
   theme(legend.position="top", legend.box = "horizontal") +
+  guides(fill = guide_legend(title.position = "top",
+                             title = "Supergroup",
+                              title.hjust = 0.5)) +
+  
   fig_barplot_env_ecological_function +
-  theme(legend.position="top", legend.box = "horizontal") ) /
+  theme(legend.position="top", legend.box = "horizontal")+
+  guides(fill = guide_legend(title.position = "top",
+                             title = "Ecological function", 
+                             title.hjust = 0.5)) ) /
   (fig_alpha_env +
        xlab("") + ylab("Shannon index") +
       theme(

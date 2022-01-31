@@ -18,7 +18,8 @@ source(here::here("R", "init.R"))
 
 ```{r}
 table_datasets <- asv_set$datasets %>% 
-  select(dataset_id, dataset_name, region, ecosystem, substrate_type, sample_number, asv_number, n_reads_mean, bioproject_accession, paper_doi) %>% 
+  select(dataset_id, dataset_name, region, ecosystem, substrate_type, sample_number, 
+         sequencing_technology, n_reads_mean, asv_number, bioproject_accession, paper_doi) %>% 
   mutate(dataset_name =  str_replace(dataset_name, "_", " ")) %>% 
   arrange(dataset_id)
 
@@ -243,8 +244,8 @@ table <- table_datasets
 caption <- "List of eukaryotic datasets and studies included in the metaPR2 databases. The column 'Reads' corresponds to mean number of reads per sample."
 label <- "datasets"
 file <- str_c("table_", label, ".tex")
-colnames <- c("ID", "Name", "Area", "Ecosystem", "Substrate", "Samples", "Reads", "ASVs", "Bioproject", "DOI")
-align <-   c("c", "p{4cm} ","p{2cm} ", rep("p{2cm}", 2), rep("c", 3), rep("p{2cm}", 1), rep("p{3cm}", 1) )
+colnames <- c("ID", "Name",   "Area",   "Ecosystem", "Substrate", "Samples", "Technology", "Reads", "ASVs", "Bioproject", "DOI")
+align <-   c("c", "  p{4cm} ","p{2cm} ", rep("p{2cm}", 2),       rep("c", 4), rep("p{4cm}", 1), rep("p{3.5cm}", 1) )
 
 table_out <- kable_latex(table, caption, label, colnames, align, digits=0, longtable = TRUE)
 
@@ -260,7 +261,7 @@ cat(table_out, file = path_table(file))
 table <- table_traits
 
 
-caption <- "Ecological function of taxa according to Table S2 of Sommeria-Klein et al. (2021).  Taxa present in the PR2 database for which ecological function was not present in Table S2 were assigned an ecological function based on the litterature.  Ecological function was propagated to all taxa below the taxon for which it was defined using an R script."
+caption <- "Ecological function of taxa according to Table S2 of Sommeria-Klein et al. (2021).  Taxa present in the PR2 database for which ecological function was not present in Table S2 were assigned an ecological function based on the literature.  Ecological function was propagated to all taxa below the taxon for which it was defined using an R script."
 label <- "traits"
 file <- str_c("table_", label, ".tex")
 colnames <- c("Taxon", "Taxonomic level", "Function", "Reference")
