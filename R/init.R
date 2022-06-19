@@ -66,7 +66,11 @@ path_fig <- function (file) str_c("../../paper-metapr2-overleaf/figs/", file)
 asv_set <- qs::qread(here("data", "asv_set.qs"))
 global <- qs::qread(here("data", "global.qs"))
 
+# Export to fasta ----------------------------------------------
 
+asv_set$fasta %>% 
+  rename(seq_name = asv_code) %>% 
+  dvutils::fasta_write(here("data", "metapr2_asv_set_1.0.fasta"))
 
 #  Merge the data with clusters ------------------------------------------
 
@@ -74,7 +78,7 @@ global <- qs::qread(here("data", "global.qs"))
   metapr2_db <- dvutils::db_info("metapr2_google")
   metapr2_db_con <- dvutils::db_connect(metapr2_db)
   
-  clusters <- tbl(metapr2_db_con, "metapr2_asv_clusters_version_1.0") %>% 
+  clusters <- tbl(metapr2_db_con, "metapr2_asv_clusters") %>% 
     collect() 
   
   dvutils::db_disconnect(metapr2_db_con)
@@ -82,7 +86,8 @@ global <- qs::qread(here("data", "global.qs"))
 # Only get 100% clusters.
   clusters <- clusters %>% 
     filter(record_type == "H",
-           pct_sim == 100) %>%
+           pct_sim == 100,
+           metapr2_version == "1.0") %>%
     rename(asv_code = hash_value,
            asv_code_centroid = hash_value_centroid) %>% 
     mutate(asv_code = str_sub(asv_code,1,10),
@@ -102,7 +107,7 @@ global <- qs::qread(here("data", "global.qs"))
   asv_set$df_cluster <- asv_set$df %>% 
     left_join(clusters) %>% 
     mutate(asv_code = case_when(!is.na(asv_code_centroid )~ asv_code_centroid,
-                                TRUE ~asv_code)) %>% 
+                                TRUE ~ asv_code)) %>% 
     group_by(file_code, asv_code) %>% 
     summarize(n_reads = sum(n_reads),
               n_reads_pct = sum(n_reads_pct)) %>% 
@@ -129,5 +134,8 @@ message("Number of rows with centroid in clustered (should be 0): ", nrow(filter
 message("Are the 2 sums identical: ", sum(asv_set$df_cluster$n_reads) == sum(asv_set$df$n_reads))
 
 message("No line with missing taxo: ", nrow(asv_set$df_cluster %>%  filter(is.na(kingdom))))
+
+message(glue::glue("Number of ASVs before clustering: {length(unique(asv_set$df$asv_code))}"))
+message(glue::glue("Number of ASVs after clustering: {length(unique(asv_set$df_cluster$asv_code))}"))
     
 

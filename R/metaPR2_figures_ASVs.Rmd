@@ -39,21 +39,21 @@ fig_treemap_all
 
 ## V9 only
 
-#### Without clustering
-
-Total numbers of V9 samples:  899 
-Total numbers of V9 ASVs:  21623 
-Total numbers of V9 reads:  949 845 841
-
-#### With clustering (OK some ASVs merged)
-
-Total numbers of V9 samples:  899 
-Total numbers of V9 ASVs:  21473 
-Total numbers of V9 reads:  949 845 841
+#### Cluster ASV =   FALSE 
+Total numbers of V9 samples:  1166 
+Total numbers of V9 ASVs:  32323 
+Total numbers of V9 reads:  804 940 059 
+#### Cluster ASV =   TRUE 
+Total numbers of V9 samples:  1166 
+Total numbers of V9 ASVs:  32195 
+Total numbers of V9 reads:  804 940 059 
 
 
 ```{r}
 asv_set_V9 <- list()
+
+for (cluster_asv in c(FALSE, TRUE)) {
+
 
 if (cluster_asv) {
   asv_set_V9$df <- asv_set$df_cluster 
@@ -85,44 +85,49 @@ asv_set_V9$fasta <- asv_set$fasta %>%
 
 n_asvs_V9 <- nrow(asv_set_V9$fasta)
 
+cat("#### Cluster ASV =  ",cluster_asv, "\n")
 cat("Total numbers of V9 samples: ",n_samples_V9, "\n")
 cat("Total numbers of V9 ASVs: ",n_asvs_V9 , "\n")
 cat("Total numbers of V9 reads: ",formatC(n_reads_V9,big.mark = " ") , "\n")
 
-
+}
 
 ```
 
 ## V4 - protists - DNA
 
-#### All V4
-#####  Without clustering
-Total numbers of V4 samples:  2928 
-Total numbers of V4 sampling sites:  859 
-Total numbers of V4 ASVs:  57340 
-Total numbers of V4 reads:  224 622 713
+#### Protist only =   FALSE 
+##### Cluster ASV =   FALSE 
+Total numbers of V4 samples:  2897 
+Total numbers of V4 sampling sites:  846 
+Total numbers of V4 ASVs:  57308 
+Total numbers of V4 reads:  224 609 623 
+#### Protist only =   FALSE 
+##### Cluster ASV =   TRUE 
+Total numbers of V4 samples:  2897 
+Total numbers of V4 sampling sites:  846 
+Total numbers of V4 ASVs:  48542 
+Total numbers of V4 reads:  224 609 623 
 
-#####  With clustering
-Total numbers of V4 samples:  2928 
-Total numbers of V4 sampling sites:  859 
-Total numbers of V4 ASVs:  48570 
-Total numbers of V4 reads:  224 622 713
+#### Protist only =   TRUE 
+##### Cluster ASV =   FALSE 
+Total numbers of V4 samples:  2889 
+Total numbers of V4 sampling sites:  842 
+Total numbers of V4 ASVs:  41255 
+Total numbers of V4 reads:  132 294 509 
+#### Protist only =   TRUE 
+##### Cluster ASV =   TRUE 
+Total numbers of V4 samples:  2889 
+Total numbers of V4 sampling sites:  842 
+Total numbers of V4 ASVs:  33311 
+Total numbers of V4 reads:  132 294 509
 
-
-##### V4 only protists
-#####  Without clustering
-Total numbers of V4 samples:  2915 
-Total numbers of V4 sampling sites:  852
-Total numbers of V4 ASVs:  40030 
-Total numbers of V4 reads:  130 373 333
-
-#####  With clustering 
-Total numbers of V4 samples:  2915 
-Total numbers of V4 sampling sites:  852 
-Total numbers of V4 ASVs:  33325 
-Total numbers of V4 reads:  132 300 915 
 
 ```{r}
+
+
+for (protist_only in c(FALSE, TRUE)) {
+for (cluster_asv in c(FALSE, TRUE)) {
 
 division_memoved <- c()
 
@@ -173,10 +178,14 @@ asv_set_V4$samples <- asv_set$samples %>%
 
 n_asvs_V4 <- nrow(asv_set_V4$fasta)
 
+cat("#### Protist only =  ",protist_only, "\n")
+cat("##### Cluster ASV =  ",cluster_asv, "\n")
 cat("Total numbers of V4 samples: ",n_samples_V4, "\n" )
 cat("Total numbers of V4 sampling sites: ",n_sampling_sites_V4, "\n" )
 cat("Total numbers of V4 ASVs: ",n_asvs_V4 , "\n")
 cat("Total numbers of V4 reads: ", formatC(n_reads_V4,big.mark = " ") , "\n" )
+  }
+}
 ```
 
 ## Total number of species
@@ -381,7 +390,11 @@ reads <- asv_set_V4$df %>%
                                    taxo_colors_fill = global$supergroup_color)
  gg_reads <- reads$gg  + 
   ylab("% of total number of reads") +
-  ggtitle("Most abundant cASVs") 
+  ggtitle("Most abundant cASVs") +
+  theme_classic() +
+  theme(legend.position="none")
+ 
+ 
   
 
 # --------------------------------------
@@ -402,7 +415,9 @@ stations <- asv_set_V4$df %>%
 gg_stations <- stations$gg + 
   ylab("% of samples where detected") +
   ggtitle("Most frequent cASVs")  +
-  guides(fill = "none")
+  theme_classic() +
+  theme(legend.position="bottom") 
+  
   
 
 # --------------------------------------
@@ -410,8 +425,8 @@ gg_stations <- stations$gg +
 asvs <- reads$df %>% 
   left_join(rename(stations$df, n_stations = n_reads)) 
 
-gg_correl <- ggplot(data = asvs) + 
-  geom_point(aes(x=n_stations, y=n_reads, color = supergroup), size = 3) + 
+fig_correl_asv <- ggplot(data = asvs) + 
+  geom_point(aes(x=n_stations, y=n_reads, color = supergroup), size = 1.5) + 
   # scale_x_log10() +
   scale_y_log10(limits = c(0.01, 2)) +
   # ylim(0.01, 2) +
@@ -421,21 +436,24 @@ gg_correl <- ggplot(data = asvs) +
   # geom_smooth(aes(x=n_stations, y=n_reads), method = "lm") +
   guides(color = "none") +
   theme_bw() +
-  ggrepel::geom_text_repel(data = filter(asvs, n_stations > 2), aes(x=n_stations, y=n_reads, label = str_sub(bar_label, 12)))
+  ggrepel::geom_text_repel(data = filter(asvs, n_stations > 2), 
+                           aes(x=n_stations, y=n_reads, label = str_sub(bar_label, 12)),
+                           size = 2)
 
+fig_correl_asv
 
 # --------------------------------------
 
 layout <- "
-AACC
-AACC
-BBDD
-BBDD
+AAAA
+AAAA
+BBBB
+BBBB
 "
 
 
-fig_bars_asv <- gg_reads + gg_stations  + gg_correl  + guide_area() +
-  plot_layout(guides = "collect", design = layout) +
+fig_bars_asv <- gg_reads + gg_stations  + guide_area() +
+  plot_layout(design = layout) +
   plot_annotation(tag_levels = 'A') & 
   theme(plot.tag = element_text(size = 30))
 
@@ -1013,7 +1031,10 @@ ggsave(plot= fig_bars_genus , filename=path_fig("fig_bars_genus.pdf"),
        width = 16 , height = 12, scale=2.5, units="cm", useDingbats=FALSE)
 
 ggsave(plot= fig_bars_asv , filename=path_fig("fig_bars_asvs.pdf"), 
-       width = 18, height = 14, scale=2.5, units="cm", useDingbats=FALSE)
+       width = 15, height = 25, scale=1.2, units="cm", useDingbats=FALSE)
+
+ggsave(plot= fig_correl_asv , filename=path_fig("fig_correl_asvs.pdf"), 
+       width = 12, height = 12, scale=1.0, units="cm", useDingbats=FALSE)
 
 ggsave(plot= fig_barplot_env , filename=path_fig("fig_barplot_env.pdf"), 
        width = 22, height = 15, scale=1.5, units="cm", useDingbats=FALSE)

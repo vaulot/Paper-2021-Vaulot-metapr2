@@ -111,7 +111,7 @@ ps_alpha <- function(ps, measures = c("Shannon"),
   # color= "ecosystem"
   
   gg <- ggplot(data = samples, aes(x= .data[[x]], y = diversity)) +
-    theme_bw() +
+    theme_classic() +
     # xlim(xmin,xmax) +
     # Next line remove samples with diversity = 0 (single species)
     scale_y_continuous(limits = c(0.01, NA)) +
@@ -121,8 +121,8 @@ ps_alpha <- function(ps, measures = c("Shannon"),
     gg <- gg +
       geom_violin() +
       # ggforce::geom_sina(aes(color=.data[[color]], shape =.data[[shape]] )) +
-      ggforce::geom_sina() +
-      geom_boxplot(color = "grey", alpha = 0, width=0.5) 
+      ggforce::geom_sina(color="grey", size = 0.5) +
+      geom_boxplot(color = "black", alpha = 0, width=0.5) 
       # geom_jitter(size=2, alpha=0.85, aes(shape = .data[[shape]]))
   } else {
     gg <- gg +

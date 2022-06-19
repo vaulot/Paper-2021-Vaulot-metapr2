@@ -72,7 +72,7 @@ n_datasets = length(unique(asv_summary$dataset_id))
 
   fig_map_stations <- ggplot() + 
     geom_sf(data = world, color="grey60", fill="grey60")  +
-    geom_sf(data=asv_summary_sf, aes(color=project), size=1.5) +
+    geom_sf(data=asv_summary_sf, aes(color=project), size=1) +
     # geom_sf(data=boundary)+ 
     theme_bw() +
     # theme(panel.border=element_blank()
@@ -147,13 +147,13 @@ fig_samples_2
 ```{r, eval=TRUE}
 
 ggsave(plot= fig_map_stations , filename=path_fig("fig_map_stations.pdf"), 
-       width = 18, height = 10, scale=1.5, units="cm", useDingbats=FALSE) 
+       width = 18, height = 10, scale=1, units="cm", useDingbats=FALSE) 
 
 ggsave(plot= fig_samples_1 , filename=path_fig("fig_samples_1.pdf"), 
-       width = 20, height = 18, scale=1.5, units="cm", useDingbats=FALSE) 
+       width = 20, height = 18, scale=1, units="cm", useDingbats=FALSE) 
 
 ggsave(plot= fig_samples_2 , filename=path_fig("fig_samples_2.pdf"), 
-       width = 12, height = 20, scale=1.5, units="cm", useDingbats=FALSE) 
+       width = 12, height = 20, scale=1, units="cm", useDingbats=FALSE) 
 
 
 ```

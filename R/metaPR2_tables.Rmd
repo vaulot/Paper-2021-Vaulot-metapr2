@@ -21,6 +21,7 @@ table_datasets <- asv_set$datasets %>%
   select(dataset_id, dataset_name, region, ecosystem, substrate_type, sample_number, 
          sequencing_technology, n_reads_mean, asv_number, bioproject_accession, paper_doi) %>% 
   mutate(dataset_name =  str_replace(dataset_name, "_", " ")) %>% 
+  mutate(sequencing_technology = str_replace(sequencing_technology, " Hiseq| Miseq", "")) %>% 
   arrange(dataset_id)
 
 
@@ -221,7 +222,8 @@ ggsave(plot= fig , filename=path_fig("fig_primer_sets.pdf"),
 ```{r}
 
 table_traits <- dvutils::pr2_traits_read() %>% 
-  filter(trait_type == "ecological_function") %>% 
+  filter(trait_type == "ecological_function",
+         !is.na(taxon_level)) %>% 
   select(taxon_name, taxon_level, trait_value, trait_source) # %>% 
   # mutate(trait_source = str_replace(trait_source, "Sommeria-Klein et al. 2021",""))
 
@@ -241,11 +243,11 @@ DT::datatable(table_traits)
 table <- table_datasets
 
 
-caption <- "List of eukaryotic datasets and studies included in the metaPR2 databases. The column 'Reads' corresponds to mean number of reads per sample."
+caption <- "List of eukaryotic datasets and studies included in the metaPR2 database. Datasets sequenced with 454 technology are single reads while those processed with Illumina are paired end reads. The column 'Samples' corresponds to the number of samples that have more than 1,000 reads after processing. The column 'Region' correspond to the 18S rRNA gene region used for metabarcoding.  The column 'Reads' corresponds to mean number of reads per sample after processing.The column 'ASVs' corresponds to the number of ASVs in the dataset after removing ASVs that have less than 100 reads over all the datasets."
 label <- "datasets"
 file <- str_c("table_", label, ".tex")
-colnames <- c("ID", "Name",   "Area",   "Ecosystem", "Substrate", "Samples", "Technology", "Reads", "ASVs", "Bioproject", "DOI")
-align <-   c("c", "  p{4cm} ","p{2cm} ", rep("p{2cm}", 2),       rep("c", 4), rep("p{4cm}", 1), rep("p{3.5cm}", 1) )
+colnames <- c("ID", "Name",   "Area",   "Ecosystem", "Substrate", "Samples", "Technology", "Region", "Reads", "ASVs", "Bioproject", "DOI")
+align <-   c("c", "  p{4cm} ","p{3cm} ", rep("p{2cm}", 2),       rep("c", 5), rep("p{2.5cm}", 1), rep("p{3.5cm}", 1) )
 
 table_out <- kable_latex(table, caption, label, colnames, align, digits=0, longtable = TRUE)
 
@@ -261,7 +263,7 @@ cat(table_out, file = path_table(file))
 table <- table_traits
 
 
-caption <- "Ecological function of taxa according to Table S2 of Sommeria-Klein et al. (2021).  Taxa present in the PR2 database for which ecological function was not present in Table S2 were assigned an ecological function based on the literature.  Ecological function was propagated to all taxa below the taxon for which it was defined using an R script."
+caption <- "Ecological function of taxa according to Table S1 of Sommeria-Klein et al. (2021).  Taxa present in the PR2 database for which ecological function was not present in Table S1 were assigned an ecological function based on the literature.  Ecological function was propagated to all taxa below the taxon for which it was defined using an R script."
 label <- "traits"
 file <- str_c("table_", label, ".tex")
 colnames <- c("Taxon", "Taxonomic level", "Function", "Reference")

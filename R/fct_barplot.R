@@ -118,7 +118,7 @@ barplot <- function(df, variable, color_coding, taxo_level) {
   gg <- df  %>% 
     ggplot() +
     xlab("% of reads") + ylab("") +
-    theme_bw() 
+    theme_classic() 
   
   if(variable_to_use == "date") {
     gg <- gg +
@@ -247,15 +247,21 @@ barplot_samples <- function(df, variable) {
     ggplot(aes(y= fct_rev(.data[[variable_to_use]]),
                x=n)) +
     xlab("Number of samples")   + ylab(variable_to_use) +
-      geom_col(color = "grey")+
-    geom_text(aes( label = ifelse(n > 200, n, "")),
-              nudge_x = - 20, 
-              hjust = 1,
-              size = 5,
-              color = "white") +
+      geom_col(fill = "grey50")+
+    # geom_text(aes( label = ifelse(n > 200, n, "")),
+    #           nudge_x = - 20, 
+    #           hjust = 1,
+    #           size = 5,
+    #           color = "white") +
+    geom_text(aes( label = n),
+              nudge_x = + 0.015* max(df$n), 
+              hjust = 0,
+              size = 3.5,
+              color = "black") +
     
-    theme_bw()  +
-    labs(title = variable_to_use) 
+    theme_classic()  +
+    labs(title = str_replace(variable_to_use, "_", " ")) +
+    scale_x_continuous(expand = expansion(mult = c(0,0.15)))
              
   
   print(gg)
